@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/rs/cors"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -18,17 +19,17 @@ type receiveJSON struct {
 func register(rw http.ResponseWriter, req *http.Request) {
 	var recv_json receiveJSON
 
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&recv_json)
+	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		log.Fatalf("Error decoding: %q", err)
+		log.Fatalf("Error ReadAll: %q", err)
 		return
 	}
 
-	log.Println(string(recv_json.businessName))
-	log.Println(recv_json.email)
-	log.Println(recv_json.ownerName)
-	log.Println(recv_json.password)
+	err = json.Unmarshal(body, &recv_json)
+	if err != nil {
+		log.Fatalf("Error Unmarshal: %q", err)
+		return
+	}
 
 	encoder, err := json.Marshal(recv_json)
 	if err != nil {
@@ -37,7 +38,7 @@ func register(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	rw.Header().Set("Content-Type", "application/json")
-	rw.Write([]byte(encoder))
+	rw.Write(encoder)
 }
 
 func main() {
