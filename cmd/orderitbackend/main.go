@@ -128,7 +128,7 @@ func main() {
 
 	var err error
 
-	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	db, err = sql.Open("postgres", "postgres://dsiedwaaywinyo:42TlG1tdtoxVYhKQDRX15mNaNs@ec2-54-163-239-28.compute-1.amazonaws.com:5432/d7mdp524vlsdf6?sslmode=require")
 	if err != nil {
 		log.Fatalf("Error opening database: %q", err)
 		return
