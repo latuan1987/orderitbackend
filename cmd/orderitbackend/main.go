@@ -1,9 +1,11 @@
 package main
 
 import (
-    "encoding/json"
-    "log"
-    "net/http"
+    	"encoding/json"
+    	"log"
+    	"net/http"
+	"github.com/rs/cors"
+	"os"
 )
 
 type receiveJSON struct{
@@ -21,11 +23,24 @@ func register(rw http.ResponseWriter, req *http.Request) {
         log.Fatalf("Error decoding: %q", err)
 	return
     }
-    log.Println(recv_json)
+    rw.Header().Set("Content-Type", "application/json")
+    rw.Write([]byte("{\"hello\": \"world\"}"))
 }
 
 func main() {
-	// Query string parameters are parsed using the existing underlying request object.
-	// The request responds to a url matching:  /search?query=computer
-	http.HandleFunc("/register", register)
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		log.Fatal("$PORT must be set")
+		return
+	}
+
+    	mux := http.NewServeMux()
+    	mux.HandleFunc("/register", register)
+
+    	// cors.Default() setup the middleware with default options being
+    	// all origins accepted with simple methods (GET, POST). See
+    	// documentation below for more options.
+    	handler := cors.Default().Handler(mux)
+    	http.ListenAndServe(":"+ port, handler)
 }
