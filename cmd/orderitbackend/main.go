@@ -25,6 +25,11 @@ func register(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	log.Println(recv_json.businessName)
+	log.Println(recv_json.email)
+	log.Println(recv_json.ownerName)
+	log.Println(recv_json.password)
+
 	encoder, err := json.Marshal(recv_json)
 	if err != nil {
 		log.Fatalf("Error marshal: %q", err)
