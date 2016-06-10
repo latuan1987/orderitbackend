@@ -12,7 +12,7 @@ type receiveJSON struct {
 	ownerName    string `json:"owner-name"`
 	businessName string `json:"business-name"`
 	email        string `json:"email"`
-	password     string `json:”password”`
+	password     string `json:"password"`
 }
 
 func register(rw http.ResponseWriter, req *http.Request) {
