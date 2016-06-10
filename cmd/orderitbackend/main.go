@@ -19,7 +19,7 @@ func register(rw http.ResponseWriter, req *http.Request) {
 	var recv_json receiveJSON
 
 	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(recv_json)
+	err := decoder.Decode(&recv_json)
 	if err != nil {
 		log.Fatalf("Error decoding: %q", err)
 		return
