@@ -1,7 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	_ "github.com/lib/pq"
 	"github.com/rs/cors"
 	"io/ioutil"
 	"log"
@@ -9,31 +11,106 @@ import (
 	"os"
 )
 
+var db *sql.DB = nil
+var owner string = "owner"
+var admin string = "admin"
+var staff string = "staff"
+
 type receiveJSON struct {
-	ownerName    string `json:"owner-name"`
-	businessName string `json:"business-name"`
-	email        string `json:"email"`
-	password     string `json:"password"`
+	OWNERNAME    string `json:"ownername"`
+	BUSINESSNAME string `json:"businessname"`
+	EMAIL        string `json:"email"`
+	PASSWORD     string `json:"password"`
+}
+
+type sendJSON struct {
+	OWNERNAME    string `json:"ownername"`
+	BUSINESSNAME string `json:"businessname"`
+	EMAIL        string `json:"email"`
+	PASSWORD     string `json:"password"`
+	BUSINESSID   int64  `json:"businessid"`
 }
 
 func register(rw http.ResponseWriter, req *http.Request) {
-	var recv_json receiveJSON
+	var recvjson = receiveJSON{}
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		log.Fatalf("Error ReadAll: %q", err)
+		log.Fatalf("Error readall: %q", err)
+		http.Error(rw, err.Error(), 500)
 		return
 	}
 
-	err = json.Unmarshal(body, &recv_json)
+	err = json.Unmarshal(body, &recvjson)
 	if err != nil {
-		log.Fatalf("Error Unmarshal: %q", err)
+		log.Fatalf("Error decoding: %q", err)
+		http.Error(rw, err.Error(), 500)
 		return
 	}
 
-	encoder, err := json.Marshal(recv_json)
+	// Insert role if not exist
+	var roleId int64 = 0
+	err = db.QueryRow("SELECT id FROM roles WHERE name=$1", owner).Scan(&roleId)
+	if err == sql.ErrNoRows {
+		if err := db.QueryRow("INSERT INTO roles (name, type) VALUES ($1,$2) RETURNING id", owner, admin).Scan(&roleId); err != nil {
+			log.Fatalf("Insert new role: %q", err)
+			http.Error(rw, err.Error(), 500)
+			return
+		}
+	} else if err != nil {
+		log.Fatalf("Error selecting roles: %q", err)
+		http.Error(rw, err.Error(), 500)
+		return
+	}
+
+	// Insert to businesses
+	var businessId int64 = 0
+	err = db.QueryRow("SELECT id FROM businesses WHERE name=$1", recvjson.BUSINESSNAME).Scan(&businessId)
+	if err == sql.ErrNoRows {
+		if err := db.QueryRow("INSERT INTO businesses (name, address) VALUES ($1,$2) RETURNING id", recvjson.BUSINESSNAME, "").Scan(&businessId); err != nil {
+			log.Fatalf("Insert new businesses: %q", err)
+			http.Error(rw, err.Error(), 500)
+			return
+		}
+	} else if err != nil {
+		log.Fatalf("Error selecting businesses: %q", err)
+		http.Error(rw, err.Error(), 500)
+		return
+	} else {
+		log.Fatal("Already exist business name")
+		http.Error(rw, "Already exist business name", 500)
+		return
+	}
+
+	// Insert to users
+	var userId int64 = 0
+	err = db.QueryRow("SELECT id FROM users WHERE username=$1", recvjson.OWNERNAME).Scan(&userId)
+	if err == sql.ErrNoRows {
+		if err := db.QueryRow("INSERT INTO users (username, password, email, business_id, role_id) VALUES ($1,$2,$3,$4,$5) RETURNING id", recvjson.OWNERNAME, recvjson.PASSWORD, recvjson.EMAIL, businessId, roleId).Scan(&userId); err != nil {
+			log.Fatalf("Insert new users: %q", err)
+			return
+		}
+	} else if err != nil {
+		log.Fatalf("Error selecting businesses: %q", err)
+		http.Error(rw, err.Error(), 500)
+		return
+	} else {
+		log.Fatal("Already exist owner name")
+		http.Error(rw, "Already exist owner name", 500)
+		return
+	}
+
+	sendData := sendJSON{
+		OWNERNAME:    recvjson.OWNERNAME,
+		BUSINESSNAME: recvjson.BUSINESSNAME,
+		EMAIL:        recvjson.EMAIL,
+		PASSWORD:     recvjson.PASSWORD,
+		BUSINESSID:   businessId}
+
+	encoder, err := json.Marshal(sendData)
 	if err != nil {
 		log.Fatalf("Error marshal: %q", err)
+		http.Error(rw, err.Error(), 500)
 		return
 	}
 
@@ -46,6 +123,35 @@ func main() {
 
 	if port == "" {
 		log.Fatal("$PORT must be set")
+		return
+	}
+
+	var err error
+
+	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatalf("Error opening database: %q", err)
+		return
+	}
+
+	// Create businessed table
+	var BUSINESS_TABLE string = "CREATE TABLE IF NOT EXISTS businesses (id SERIAL PRIMARY KEY NOT NULL, name text, address text, created timestamp DEFAULT CURRENT_TIMESTAMP, modified timestamp DEFAULT CURRENT_TIMESTAMP)"
+	if _, err = db.Exec(BUSINESS_TABLE); err != nil {
+		log.Fatalf("Error creating businesses table: %q", err)
+		return
+	}
+
+	// Create roles table
+	var ROLE_TABLE string = "CREATE TABLE IF NOT EXISTS roles (id SERIAL PRIMARY KEY NOT NULL, name text, type text, created timestamp DEFAULT CURRENT_TIMESTAMP, modified timestamp DEFAULT CURRENT_TIMESTAMP)"
+	if _, err = db.Exec(ROLE_TABLE); err != nil {
+		log.Fatalf("Error creating roles table: %q", err)
+		return
+	}
+
+	// Create users table
+	var USER_TABLE string = "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY NOT NULL, username text, password text, email text, business_id BIGINT references businesses(id), role_id BIGINT references roles(id), created timestamp DEFAULT CURRENT_TIMESTAMP, modified timestamp DEFAULT CURRENT_TIMESTAMP)"
+	if _, err = db.Exec(USER_TABLE); err != nil {
+		log.Fatalf("Error creating user table: %q", err)
 		return
 	}
 
