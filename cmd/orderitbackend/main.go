@@ -145,7 +145,7 @@ func registerStaff(rw http.ResponseWriter, req *http.Request) {
 
 	// Insert role if not exist
 	var roleId int64 = 0
-	err = db.QueryRow("SELECT id FROM roles WHERE id=$1", owner).Scan(&roleId)
+	err = db.QueryRow("SELECT id FROM roles WHERE id=$1", jsonStaff.ROLEID).Scan(&roleId)
 	if err == sql.ErrNoRows {
 		if err := db.QueryRow("INSERT INTO roles (name, type) VALUES ($1,$2) RETURNING id", waiter, staff).Scan(&roleId); err != nil {
 			log.Fatalf("Insert new role: %q", err)
