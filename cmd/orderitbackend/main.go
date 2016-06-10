@@ -1,28 +1,28 @@
 package main
 
 import (
- //   	"encoding/json"
+    	"encoding/json"
     	"log"
     	"net/http"
 	"github.com/rs/cors"
 	"os"
 )
 
-//type receiveJSON struct{
-//	ownerName  	string    `json:"owner-name"`
-//	businessName   string    `json:"business-name"`
-//	email    	string    `json:"email"`
-//	password     	string    `json:”password”`
-//}
+type receiveJSON struct{
+	ownerName  	string    `json:"owner-name"`
+	businessName   string    `json:"business-name"`
+	email    	string    `json:"email"`
+	password     	string    `json:”password”`
+}
 
 func register(rw http.ResponseWriter, req *http.Request) {
- //   decoder := json.NewDecoder(req.Body)
-   // var recv_json receiveJSON   
-    //err := decoder.Decode(&recv_json)
-    //if err != nil {
-    //    log.Fatalf("Error decoding: %q", err)
-//	return
-  //  }
+    decoder := json.NewDecoder(req.Body)
+    var recv_json receiveJSON   
+    err := decoder.Decode(&recv_json)
+    if err != nil {
+        log.Fatalf("Error decoding: %q", err)
+	return
+    }
     rw.Header().Set("Content-Type", "application/json")
     rw.Write([]byte("{\"hello\": \"world\"}"))
 }
