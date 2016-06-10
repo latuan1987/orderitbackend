@@ -19,13 +19,13 @@ func register(rw http.ResponseWriter, req *http.Request) {
 	var recv_json receiveJSON
 
 	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&recv_json)
+	err := decoder.Decode(recv_json)
 	if err != nil {
 		log.Fatalf("Error decoding: %q", err)
 		return
 	}
 
-	log.Println(recv_json.businessName)
+	log.Println(string(recv_json.businessName))
 	log.Println(recv_json.email)
 	log.Println(recv_json.ownerName)
 	log.Println(recv_json.password)
