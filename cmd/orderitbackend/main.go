@@ -86,7 +86,8 @@ func register(rw http.ResponseWriter, req *http.Request) {
 		return
 	} else {
 		log.Fatal("Already exist business name")
-		http.Error(rw, "Already exist business name", http.StatusInternalServerError)
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte("true"))
 		return
 	}
 
@@ -104,7 +105,8 @@ func register(rw http.ResponseWriter, req *http.Request) {
 		return
 	} else {
 		log.Fatal("Already exist owner name")
-		http.Error(rw, "Already exist owner name", http.StatusInternalServerError)
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte("true"))
 		return
 	}
 
@@ -172,7 +174,8 @@ func registerStaff(rw http.ResponseWriter, req *http.Request) {
 		return
 	} else {
 		log.Fatal("Already exist owner name")
-		http.Error(rw, "Already exist owner name", http.StatusInternalServerError)
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte("true"))
 		return
 	}
 
